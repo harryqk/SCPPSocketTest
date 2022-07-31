@@ -7,12 +7,13 @@ void WaitForCommand();
 int main()
 {
     NetManager Mgr;
-    char buf[10];
+    const int size = 50;
+    char buf[size];
     printf("please input command\n");
     int mode = 0;
     while (true)
     {
-        if (std::cin.getline(buf, 20))
+        if (std::cin.getline(buf, size))
         {
             std:
             std::string str = buf;
@@ -43,6 +44,7 @@ int main()
             } else if (str.compare("quit") == 0)
             {
                 printf("quit\n");
+                Mgr.Clear();
                 break;
             } else
             {
