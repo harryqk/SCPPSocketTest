@@ -23,7 +23,8 @@ int main()
             {
                 printf("startclient\n");
                 //StartClient("192.168.1.9", 1500);
-                Mgr.StartTCPClient("192.168.1.9", 1500);
+                //Mgr.StartTCPClient("192.168.1.9", 1500);
+                Mgr.StartTCPClient("192.168.1.104", 1500);
                 mode = 1;
             } else if (str.compare(("startserver")) == 0)
             {
@@ -44,6 +45,8 @@ int main()
             } else if (str.compare("quit") == 0)
             {
                 printf("quit\n");
+                Mgr.StopTCPClient();
+                Mgr.StopTCPCServer();
                 Mgr.Clear();
                 break;
             } else
@@ -73,7 +76,7 @@ void WaitForCommand()
         {
             printf("startclient\n");
             //StartClient("192.168.1.9", 1500);
-            Mgr.StartTCPClient("192.168.1.9", 1500);
+            Mgr.StartTCPClient("192.168.1.104", 1500);
             mode = 1;
         } else if(str.compare(("startserver")) == 0)
         {
