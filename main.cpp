@@ -64,8 +64,12 @@ int main()
             if (str.compare("startclient") == 0)
             {
                 printf("startclient\n");
+#ifdef _WIN32
+
+                Mgr.StartTCPClient("192.168.1.104", 1500);
+#elif __APPLE__
                 Mgr.StartTCPClient("192.168.1.9", 1500);
-                //Mgr.StartTCPClient("192.168.1.104", 1500);
+#endif
                 mode = 0;
             } else if (str.compare(("startserver")) == 0)
             {

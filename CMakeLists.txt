@@ -12,8 +12,8 @@ endif()
 
 
 include_directories(${PROJECT_SOURCE_DIR}/Includes)
-include_directories(${PROJECT_SOURCE_DIR}/Includes/Win)
-include_directories(${PROJECT_SOURCE_DIR}/Includes/Mac)
+#include_directories(${PROJECT_SOURCE_DIR}/Includes/Win)
+#include_directories(${PROJECT_SOURCE_DIR}/Includes/Mac)
 
 link_directories(${PROJECT_SOURCE_DIR}/Lib)
 
