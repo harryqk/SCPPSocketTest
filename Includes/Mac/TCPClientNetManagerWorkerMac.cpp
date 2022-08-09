@@ -37,6 +37,7 @@ namespace scppsocket
             {
                 printf("mac client select return errno=%d\n", errno);
                 perror("mac client select return error");
+                FD_CLR(Local->GetFileDescriptor(), &readfds);
                 Local->Close();
                 printf("client close socket on fd %d\n", fd);
                 break;
@@ -49,6 +50,7 @@ namespace scppsocket
                 //Server shutdown, close client
                 if(nread == 0)
                 {
+                    FD_CLR(Local->GetFileDescriptor(), &readfds);
                     Local->Close();
                     printf("client close socket on fd %d\n", fd);
                     break;
@@ -61,14 +63,20 @@ namespace scppsocket
                     ConnectionToServer->Read(LenBuf, 4);
                     int len = SocketUtil::BytesToInt((byte *)LenBuf);
                     ConnectionToServer->Read(ReadBuf, len);
-                    char* msg = new char[len];
-                    memcpy(msg, ReadBuf, len);
-                    printf("client read  %d\n", len);
-                    printf("client read  %s\n", msg);
+//                    char* msg = new char[len];
+//                    memcpy(msg, ReadBuf, len);
+//                    printf("client read  %d\n", len);
+//                    printf("client read  %s\n", msg);
+//                    delete[] msg;
+                    if(OnClientMessageRead != nullptr)
+                    {
+                        OnClientMessageRead(ReadBuf, len);
+                    }
+
                 }
             }
         }
-
+        printf("client do work finish\n");
     }
 
     void TCPClientNetManagerWorkerMac::SendMessage(const char *Msg, int Len)
@@ -78,19 +86,24 @@ namespace scppsocket
 
     TCPClientNetManagerWorkerMac::TCPClientNetManagerWorkerMac()
     {
-        LenBuf = new char[4];
-        ReadBuf = new char[1024];
+//        LenBuf = new char[4];
+//        ReadBuf = new char[1024];
         std::printf("construct TCPClientNetManagerWorkerMac\n");
     }
 
     TCPClientNetManagerWorkerMac::~TCPClientNetManagerWorkerMac()
     {
-        delete ReadBuf;
-        ReadBuf = nullptr;
-        delete LenBuf;
-        LenBuf = nullptr;
-        delete ConnectionToServer;
-        ConnectionToServer = nullptr;
+//        delete[] ReadBuf;
+//        ReadBuf = nullptr;
+//        delete[] LenBuf;
+//        LenBuf = nullptr;
+//        if(ConnectionToServer != nullptr)
+//        {
+//            delete ConnectionToServer;
+//            ConnectionToServer = nullptr;
+//        }
+
+
         std::printf("destruct TCPClientNetManagerWorkerMac\n");
     }
 
@@ -158,6 +171,7 @@ namespace scppsocket
 
         if(ConnectionToServer != nullptr && ConnectionToServer->GetSSock() != nullptr)
         {
+            FD_CLR(ConnectionToServer->GetSSock()->GetFileDescriptor(), &readfds);
             ConnectionToServer->GetSSock()->ShutDown();
             ConnectionToServer->GetSSock()->Close();
         }

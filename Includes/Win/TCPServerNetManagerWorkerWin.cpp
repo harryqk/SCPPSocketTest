@@ -19,13 +19,44 @@ namespace scppsocket
             //Copy readfds to testfds, select will modify testfds
             testfds = readfds;
             std::printf("server waiting\n");
-
+            fflush(stdout);
             //Block until certain fd readable or error return, FD_SETSIZE is max system fd value
             result = select(FD_SETSIZE, &testfds, (fd_set *) nullptr,(fd_set *)nullptr, (struct timeval *) nullptr);
             if(result < 1)
             {
-                printf("Win server select return errno=%d\n", errno);
-                perror("Win server select return error");
+                int err =WSAGetLastError();
+                if(err = WSANOTINITIALISED)
+                {
+                    printf("select WSANOTINITIALISED\n");
+                }
+                else if(err == WSAEFAULT)
+                {
+                    printf("select WSAEFAULT\n");
+                }
+                else if(err == WSAENETDOWN)
+                {
+                    printf("select WSAENETDOWN\n");
+                }
+                else if(err == WSAEINVAL)
+                {
+                    printf("select WSAEINVAL\n");
+                }
+                else if(err == WSAEINTR)
+                {
+                    printf("select WSAEINTR\n");
+                }
+                else if(err =WSAEINPROGRESS)
+                {
+                    printf("select WSAEINPROGRESS\n");
+                }
+                else if(err = WSAENOTSOCK)
+                {
+                    printf("select WSAENOTSOCK\n");
+                }
+                else
+                {
+                    printf("select fail\n");
+                }
                 Local->Close();
                 break;
             }
@@ -39,7 +70,7 @@ namespace scppsocket
                 HandleRead();
             }
         }
-        printf("server finish\n");
+        printf("server do work finish\n");
     }
 
     int TCPServerNetManagerWorkerWin::GetMacConnection() const
@@ -57,6 +88,7 @@ namespace scppsocket
         int client_sockfd;
         struct sockaddr_in client_address;
         client_sockfd = Local->Accept((struct sockaddr *)&client_address);
+
         SCPPSocket* NewSock = Local->Clone(client_sockfd, client_address);
         Connection* Conn = new TCPConnection(NewSock);
         ConnectionsToClient.push_back(Conn);
@@ -86,32 +118,52 @@ namespace scppsocket
                     }
                     else if(err==WSAETIMEDOUT)//timeout
                     {
-                        Local->Close();
-                        printf("timeout client close socket on fd %d\n", fd);
-                        break;
+                        printf("timeout removing client on fd %d\n", fd);
                     }
                     else if(err==WSAENETDOWN)//disconnect
                     {
-                        Local->Close();
-                        printf("disconnect client close socket on fd %d\n", fd);
-                        break;
+                        printf("The network subsystem has failed removing client on fd %d\n", fd);
+                    }
+                    else if(err == WSAESHUTDOWN)
+                    {
+                        printf("The socket has been shut down removing client on fd %d\n", fd);
+                    }
+                    else if(err == WSAECONNRESET)
+                    {
+                        printf("The socket has been reset by peer removing client on fd %d\n", fd);
                     }
                     else
                     {
-                        Local->Close();
-                        printf("error client close socket on fd %d\n", fd);
-                        break;
+                        printf("error happen removing client on fd %d\n", fd);
                     }
+                    conn->GetSSock()->Close();
+                    FD_CLR(fd, &readfds);
+                    ConnectionsToClient.erase(it++);
+                    delete conn;
+                    conn = nullptr;
+                }
+                else if(ret == 0)
+                {
+                    conn->GetSSock()->Close();
+                    //Clear select readfds of this client
+                    FD_CLR(fd, &readfds);
+                    printf("removing client on fd %d\n", fd);
+                    ConnectionsToClient.erase(it++);
+                    delete conn;
+                    conn = nullptr;
                 }
                 else
                 {
                     //ConnectionToServer->Read(LenBuf, 4);
                     int len = SocketUtil::BytesToInt((byte *)LenBuf);
                     conn->Read(ReadBuf, len);
-                    char* msg = new char[len];
+                    char* msg = new char[len + 1];
                     memcpy(msg, ReadBuf, len);
+                    msg[len] = '\0';
                     printf("client read  %d\n", len);
                     printf("client read  %s\n", msg);
+                    delete[] msg;
+                    it++;
                 }
             } else
             {
@@ -129,9 +181,9 @@ namespace scppsocket
 
     TCPServerNetManagerWorkerWin::~TCPServerNetManagerWorkerWin()
     {
-        delete LenBuf;
+        delete[] LenBuf;
         LenBuf = nullptr;
-        delete ReadBuf;
+        delete[] ReadBuf;
         ReadBuf = nullptr;
         while(!ConnectionsToClient.empty()){
             Connection* Conn = ConnectionsToClient.front();
@@ -167,11 +219,13 @@ namespace scppsocket
         for(p1=ConnectionsToClient.begin();p1!=ConnectionsToClient.end();p1++)
         {
             Connection* Conn = (Connection*)*p1;
-            Conn->GetSSock()->ShutDown();
+            FD_CLR(Conn->GetSSock()->GetFileDescriptor(), &readfds);
+            //Conn->GetSSock()->ShutDown();
             Conn->GetSSock()->Close();
         }
         if(Local != nullptr)
         {
+            FD_CLR(Local->GetFileDescriptor(), &readfds);
             Local->ShutDown();
             Local->Close();
         }

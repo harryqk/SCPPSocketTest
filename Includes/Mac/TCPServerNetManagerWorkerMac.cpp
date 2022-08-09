@@ -27,6 +27,7 @@ namespace scppsocket
             {
                 printf("mac server select return errno=%d\n", errno);
                 perror("mac server select return error");
+                FD_CLR(Local->GetFileDescriptor(), &readfds);
                 Local->Close();
                 break;
             }
@@ -40,18 +41,9 @@ namespace scppsocket
                 HandleRead();
             }
         }
-        printf("server finish\n");
+        printf("server do work finish\n");
     }
 
-    int TCPServerNetManagerWorkerMac::GetMacConnection() const
-    {
-        return MacConnection;
-    }
-
-    void TCPServerNetManagerWorkerMac::SetMacConnection(int macConnection)
-    {
-        MacConnection = macConnection;
-    }
 
     void TCPServerNetManagerWorkerMac::HandleAccept()
     {
@@ -95,12 +87,18 @@ namespace scppsocket
                     conn->Read(LenBuf, 4);
                     int len = SocketUtil::BytesToInt((byte *)LenBuf);
                     conn->Read(ReadBuf, len);
-                    char* msg = new char[len];
-                    memcpy(msg, ReadBuf, len);
-                    std::cout << len << std::endl;
-                    std::cout << msg << std::endl;
+//                    char* msg = new char[len + 1];
+//                    memcpy(msg, ReadBuf, len);
+//                    msg[len] = '\0';
+//                    std::cout << len << std::endl;
+//                    std::cout << msg << std::endl;
+//                    printf("server read  %s\n", msg);
+//                    delete[] msg;
+                    if(OnServerMessageRead != nullptr)
+                    {
+                        OnServerMessageRead(conn->GetSSock()->GetFileDescriptor(), ReadBuf, len);
+                    }
                     it++;
-                    printf("server read  %s\n", msg);
                 }
             } else
             {
@@ -111,56 +109,55 @@ namespace scppsocket
 
     TCPServerNetManagerWorkerMac::TCPServerNetManagerWorkerMac()
     {
-        LenBuf = new char[4];
-        ReadBuf = new char[1024];
         std::printf("construct TCPServerNetManagerWorkerMac\n");
     }
 
     TCPServerNetManagerWorkerMac::~TCPServerNetManagerWorkerMac()
     {
-        delete LenBuf;
-        LenBuf = nullptr;
-        delete ReadBuf;
-        ReadBuf = nullptr;
-        while(!ConnectionsToClient.empty()){
-            Connection* Conn = ConnectionsToClient.front();
-            ConnectionsToClient.pop_front();
-            delete Conn;
-            Conn = nullptr;
-        }
         std::printf("destruct TCPServerNetManagerWorkerMac\n");
     }
 
-    void TCPServerNetManagerWorkerMac::SendMessage(const char *Msg, int Len)
+    void TCPServerNetManagerWorkerMac::SendMessage(int FileDescriptor, const char* Msg, int Len)
     {
-
+        std::list<Connection*>::iterator p1;
+        for(p1=ConnectionsToClient.begin();p1!=ConnectionsToClient.end();p1++)
+        {
+            Connection* Conn = (Connection*)*p1;
+            if(Conn->GetSSock()->GetFileDescriptor() == FileDescriptor)
+            {
+                Conn->Send(Msg, Len);
+                break;
+            }
+        }
     }
 
-    SCPPSocket *scppsocket::TCPServerNetManagerWorkerMac::GetLocal() const
+    void TCPServerNetManagerWorkerMac::Broadcast(const char *Msg, int Len)
     {
-        return Local;
-    }
-
-    void TCPServerNetManagerWorkerMac::SetLocal(scppsocket::SCPPSocket *local)
-    {
-        Local = local;
+        std::list<Connection*>::iterator p1;
+        for(p1=ConnectionsToClient.begin();p1!=ConnectionsToClient.end();p1++)
+        {
+            Connection* Conn = (Connection*)*p1;
+            Conn->Send(Msg, Len);
+        }
     }
 
     void TCPServerNetManagerWorkerMac::StopWork()
     {
-        delete LenBuf;
+        delete[] LenBuf;
         LenBuf = nullptr;
-        delete ReadBuf;
+        delete[] ReadBuf;
         ReadBuf = nullptr;
         std::list<Connection*>::iterator p1;
         for(p1=ConnectionsToClient.begin();p1!=ConnectionsToClient.end();p1++)
         {
             Connection* Conn = (Connection*)*p1;
+            FD_CLR(Conn->GetSSock()->GetFileDescriptor(), &readfds);
             Conn->GetSSock()->ShutDown();
             Conn->GetSSock()->Close();
         }
         if(Local != nullptr)
         {
+            FD_CLR(Local->GetFileDescriptor(), &readfds);
             Local->ShutDown();
             Local->Close();
         }

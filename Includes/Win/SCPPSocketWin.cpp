@@ -75,16 +75,15 @@ namespace scppsocket
         //----------------------
         // Connect to server.
         int ret = connect(FileDescriptor, Address, sizeof (sockaddr));
-        if (ret == SOCKET_ERROR) {
-            wprintf(L"connect function failed with error: %ld\n", WSAGetLastError());
-            ret = closesocket(FileDescriptor);
-            if (ret == SOCKET_ERROR)
-                wprintf(L"closesocket function failed with error: %ld\n", WSAGetLastError());
-            WSACleanup();
-            return 1;
-        }
+//        if (ret == SOCKET_ERROR) {
+//            wprintf(L"connect function failed with error: %ld\n", WSAGetLastError());
+//            ret = closesocket(FileDescriptor);
+//            if (ret == SOCKET_ERROR)
+//                wprintf(L"closesocket function failed with error: %ld\n", WSAGetLastError());
+//            WSACleanup();
+//            return 1;
+//        }
 
-        wprintf(L"Connected to server.\n");
         return ret;
     }
 
