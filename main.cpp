@@ -69,6 +69,8 @@ int main()
                 Mgr.StartTCPClient("192.168.1.104", 1500);
 #elif __APPLE__
                 Mgr.StartTCPClient("192.168.1.9", 1500);
+#elif __linux__
+                Mgr.StartTCPClient("10.0.2.15", 1500);
 #endif
                 mode = 0;
             } else if (str.compare(("startserver")) == 0)

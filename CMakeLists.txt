@@ -12,8 +12,6 @@ endif()
 
 
 include_directories(${PROJECT_SOURCE_DIR}/Includes)
-#include_directories(${PROJECT_SOURCE_DIR}/Includes/Win)
-#include_directories(${PROJECT_SOURCE_DIR}/Includes/Mac)
 
 link_directories(${PROJECT_SOURCE_DIR}/Lib)
 
@@ -27,6 +25,6 @@ elseif(WINDOWS)
     target_link_libraries(SCPPSocketTestClient SCPPSocketWin.lib)
     target_link_libraries(SCPPSocketTestServer SCPPSocketWin.lib)
 elseif(LINUX)
-    #target_link_libraries(SCPPSocketTestClient libSCPPSocketMac.a)
-    #target_link_libraries(SCPPSocketTestServer libSCPPSocketMac.a)
+    target_link_libraries(SCPPSocketTestClient libSCPPSocketLinux.a)
+    target_link_libraries(SCPPSocketTestServer libSCPPSocketLinux.a)
 endif()
