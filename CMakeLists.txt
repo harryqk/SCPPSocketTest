@@ -15,12 +15,12 @@ include_directories(${PROJECT_SOURCE_DIR}/Includes)
 
 link_directories(${PROJECT_SOURCE_DIR}/Lib)
 
-add_executable(SCPPSocketTestClient main.cpp)
-add_executable(SCPPSocketTestServer main.cpp)
+add_executable(SCPPSocketTestClient main.cpp Harry1.pb.cc)
+add_executable(SCPPSocketTestServer main.cpp Harry1.pb.cc)
 if(MACOS)
-
-    target_link_libraries(SCPPSocketTestClient libSCPPSocketMac.a)
-    target_link_libraries(SCPPSocketTestServer libSCPPSocketMac.a)
+    add_definitions(-DNDEBUG)
+    target_link_libraries(SCPPSocketTestClient libSCPPSocketMac.a libprotobuf.a)
+    target_link_libraries(SCPPSocketTestServer libSCPPSocketMac.a libprotobuf.a)
 elseif(WINDOWS)
     target_link_libraries(SCPPSocketTestClient SCPPSocketWin.lib)
     target_link_libraries(SCPPSocketTestServer SCPPSocketWin.lib)
